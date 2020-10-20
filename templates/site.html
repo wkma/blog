@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+   <ul class="media-list">
+        {% for acticle_obj in article_list %}
+             <li class="media">
+                 <h4 class="media-heading"><a href="/{{ username }}/article/{{ acticle_obj.pk }}"> {{ acticle_obj.title }}</a></h4>
+            <div class="media-left">
+              <a href="#">
+                <img class="media-object" src="/media/{{ acticle_obj.blog.userinfo.avatar }}" alt="..." width="66" height="40">
+              </a>
+            </div>
+            <div class="media-body">
+                <p>{{ acticle_obj.desc }}</p>
+            </div>
+             <div class="pull-right">
+                 <span>posted&nbsp;&nbsp;</span>
+                 <span>@&nbsp;&nbsp;</span>
+                 <span>{{ acticle_obj.create_time|date:"Y-m-d" }}&nbsp;</span>
+                 <span>{{ acticle_obj.blog.userinfo.username }}&nbsp;</span>
+                 <span><span class="glyphicon glyphicon-comment"></span>评论:{{ article_obj.comment_num }}&nbsp;&nbsp;</span>
+                 <span><span class="glyphicon glyphicon-thumbs-up"></span>点赞:{{ acticle_obj.up_num }}&nbsp;</span>
+                 <span><a href="#">编辑</a></span>
+             </div>
+             <hr>
+{#                <nav aria-label="Page navigation">#}
+{#                </nav>#}
+          </li>
+            {% endfor %}
+                </ul>
+{% endblock %}

@@ -1,0 +1,318 @@
+from django.shortcuts import render,redirect,HttpResponse
+from app01.forms import MyRegForm
+from app01 import models
+from django.http import  JsonResponse
+from django.contrib import auth
+from django.contrib.auth .decorators import login_required  # 登录装饰器
+from django.db.models import Count,F #导入聚合函数  F查询
+from django.db.models.functions import TruncMonth  #按月分类
+
+
+
+def bootstrapcs(request):
+    return render(request,'bootstrapceshi.html')
+
+
+def register(request):
+    form_obj = MyRegForm()
+    if request.method == 'POST':
+        back_dic = {'code': 1000, 'msg': ''}  # 与ajax交互而定义一个字典
+        # 校验数据是否合法
+        form_obj = MyRegForm(request.POST)  #只接收form1字段进行校验
+        # 判断数据是否合法
+        if form_obj.is_valid():
+            # print(form_obj.cleaned_data)  #{'username': 'wang', 'password': '123', 'confirm_password': '123', 'email': 'wwwwww@xx.com'}
+            clean_data = form_obj.cleaned_data  #将校验通过的数据字典赋值给一个变量
+            #将字典里面的confirm_password删除
+            clean_data.pop('confirm_password')  #{'username': 'wang', 'password': '123', 'email': 'wwwwww@xx.com'}
+            #用户头像
+            file_obj = request.FILES.get('avatar')
+            #针对用户头像一定要判断是否传值 不能直接添加到字典里去
+            if file_obj:
+                clean_data['avatar'] = file_obj
+            #操作数据库进行保存
+            models.UserInfo.objects.create_user(**clean_data)
+            back_dic['url'] = '/login/'
+        else:
+            back_dic['code'] = 2000
+            back_dic['msg'] = form_obj.errors
+        return JsonResponse(back_dic)
+
+    return render(request,'register.html',locals())
+
+
+def login(request):
+    if request.method == "POST":
+        print(request.POST)
+        back_dic ={'code':1000,'msg':''}
+        username= request.POST.get('username')
+        password = request.POST.get('password')
+        code = request.POST.get('code')
+        #1先校验验证码是否正确,忽略大小写
+        if request.session.get('code').upper() == code.upper():
+            #2校验用户名与密码是否正确
+            user_obj = auth.authenticate(request,username=username,password=password)
+            if user_obj:
+                #保存用户状态
+                auth.login(request,user_obj)
+                back_dic['url'] ='/'
+            else:
+                back_dic['code'] = 2000
+                back_dic['msg'] = '用户名或密码错误'
+        else:
+            back_dic['code'] = 3000
+            back_dic['msg'] = '验证码错误'
+        return JsonResponse(back_dic)
+    return render(request,'login.html')
+
+from PIL import Image,ImageDraw,ImageFont
+"""
+Image:生成图片
+ImageDraw：能够在图片上乱涂画
+ImageFont  控制字体样式
+"""
+from io import BytesIO,StringIO
+"""
+内存管理模块
+BytesIO：临时帮你存储数据 返回的时候数据是二进制
+StringIO：临时帮你存储数据 返回的时候数据是字符串
+"""
+import random
+def random_colour():
+    return random.randint(0,255),random.randint(0,255),random.randint(0,255)
+def get_code(request):
+    #推导步骤1：直接获取后端现成的图片二进制数据发送给前端
+    # with open(r'static/img/345.jpg','rb') as f:
+    #     data = f.read()
+    # return HttpResponse(data)
+
+    #推导步骤2.利用pillow模块动态产生图片
+    # img_obj = Image.new('RGB', (430, 35), random_colour())
+    # #先将图片保存起来
+    # with open('xxx.png','wb') as f:
+    #     img_obj.save(f,'png')
+    # #再将图片对象取出来
+    # with open('xxx.png','rb') as f:
+    #     data = f.read()
+    # return HttpResponse(data)
+
+    #推导步骤3：文件存储繁琐IO操作效率低 借助于内存管理器模块
+    # img_obj = Image.new('RGB',(400,50),random_colour())
+    # io_obj = BytesIO()  #生成一个内存管理器模块 可以看成是文件句柄
+    # img_obj.save(io_obj,'png')
+    # return HttpResponse(io_obj.getvalue())  #从内存管理器中读取二进制的图片返回给前端
+
+    #最终步骤：写图片验证码
+    img_obj = Image.new('RGB',(400,50),random_colour())
+    img_draw = ImageDraw.Draw(img_obj)  #产生一个画笔对象
+    img_font = ImageFont.truetype('static/font/alipu.ttf',30)  #字体样式 大小
+
+    #随机验证码 五位数的随机验证码 数字 小写字母 大写字母
+    code = ''
+    for i in range(5):
+        random_upper = chr(random.randint(65,90))
+        random_lower = chr(random.randint(97,122))
+        random_int = str(random.randint(0,9))
+        #从上面三个里面随机选一个
+        tmp = random.choice([random_lower,random_upper,random_int])
+        #将随机字符串写入到图片上
+        #一个一个字写可以可知间隙，依次完全生成好了就无法控制间隙
+        img_draw.text((i*50+60,0),tmp,random_colour(),img_font)
+        #拼接随机字符串
+        code += tmp
+    # print(code)
+    #随机验证码在登录的视图函数里面需要用到 要比对 所以要找地方存起来并在视图函数可以拿到
+    request.session['code'] = code
+    io_obj = BytesIO()
+    img_obj.save(io_obj,'png')
+    return HttpResponse(io_obj.getvalue())
+
+
+from utils.mypage import Pagination
+def home(request,*wargs):
+    #查询本网站所有数据
+    article_queryset = models.Article.objects.all()
+    page_obj = Pagination(current_page=request.GET.get('page', 1), all_count=article_queryset.count())
+    page_queryset = article_queryset[page_obj.start:page_obj.end]
+    # current_page = request.GET.get('page', 1)
+    # all_count = article_queryset.count()
+    # # 1.传值生成对象
+    # page_obj = Pagination(current_page=current_page, all_count=all_count)
+    # # 2.直接对总数据进行切片操作
+    # page_queryset = article_queryset[page_obj.start:page_obj.end]
+    # #3.将page_queryset传递到页面，替换之前的book_queryset
+    return render(request,'home.html',locals())
+
+
+@login_required
+def set_password(request):
+    if request.is_ajax():
+        back_dic={'code':1000,'msg':''}
+        if request.method == "POST":
+            old_password = request.POST.get('old_password')
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+            is_right = request.user.check_password(old_password)
+            if is_right:
+                if new_password == confirm_password:
+                    request.user.set_password(new_password)
+                    request.user.save()
+                    back_dic['msg'] = '修改成功'
+                else:
+                    back_dic['code'] = 1001
+                    back_dic['msg'] = '两次密码不一致'
+            else:
+                back_dic['code'] = 1002
+                back_dic['msg'] = '原密码错误'
+    return JsonResponse(back_dic)
+
+@login_required
+def logout(request):
+    auth.logout(request)
+    return redirect('/')
+
+
+def site(request, username, **kwargs):  #查找用户，然后返回
+    """
+    :param request:
+    :param username:
+    :param kwargs:如果该参数有值意味着对article_list做额外的筛选操作
+    :return:
+    """
+    #先校验当前用户名对应的个人站点是否存在
+    user_obj = models.UserInfo.objects.filter(username=username).first()
+    #如果用户不存在则返回404页面
+    if not user_obj:
+        return render(request,'error.html')
+    blog =user_obj.blog
+    #常看当前个人站点的所有文章
+    article_list = models.Article.objects.filter(blog=blog)  #queryset对象，侧边栏的筛选其实就是对article_list再进一步筛选
+
+    #1查询当前用户所有的分类以及分类下的文章数
+    category_list = models.Category.objects.filter(blog=blog).annotate(count_num=Count('article__pk')).values_list('name','count_num','pk')
+    # print(category_list)  <QuerySet [('数学建模培养', 1), ('王的分类', 2), ('python', 2), ('前端', 1)]>
+    #2查询当前用户所有的标签及标签下的文章数
+    tag_list = models.Tag.objects.filter(blog=blog).annotate(count_num=Count('article__pk')).values_list('name','count_num','pk')
+    # print(tag_list)  <QuerySet [('王的标签', 2), ('python', 3), ('算法', 0)]>
+    #3按照年月统计所有的文章
+    date_list = models.Article.objects.filter(blog=blog).annotate(month=TruncMonth('create_time'))\
+        .values('month').annotate(count_num=Count('pk')).values_list('month','count_num')
+    # print(date_list)
+    if kwargs:
+        # print(kwargs)  #{'condition': 'tag', 'param': '1'}
+        condition = kwargs.get('condition')
+        param = kwargs.get('param')
+        #判断用户想要根据说明条件筛选数据
+        if condition == 'category':
+            article_list = article_list.filter(category_id=param)
+        elif condition == 'tag':
+            article_list = article_list.filter(tags__pk=param)
+        else:
+            year,month = param.split('-')  #解压赋值。例如2020-12 [2020,12]
+            article_list = article_list.filter(create_time__year=year,create_time__month = month)
+
+    return render(request,'site.html',locals())
+
+
+def article_detail(request,username,article_id):
+    """
+    需要校验username和article_id是否存在，但是我们这里先只完成正确情况
+
+    :param request:
+    :param username:
+    :param article_id:
+    :return:
+    """
+    #1先获取文章对象
+    user_obj = models.UserInfo.objects.filter(username=username).first()
+    blog = user_obj.blog
+    article_obj = models.Article.objects.filter(pk=article_id,blog__userinfo__username=username).first()
+    if not article_obj:
+        return render(request,'error.html')
+
+    #获取当前文章所有评论
+    comment_list = models.Comment.objects.filter(article=article_obj)
+
+    return render(request,'article_detail.html',locals())
+
+import json
+def up_or_down(request):
+    """
+    1校验用户是否登录
+    2判断当前文章是否是用户自己写的（自己不能给自己点赞）
+    3判断当前用户是否已经给当前文章点过了
+    4操作数据库
+    :param request:
+    :return:
+    """
+    if request.is_ajax():
+        back_dic ={'code':1000,'msg':''}
+        #1判断当前用户是否登录
+
+        if request.user.is_authenticated:
+            article_id = request.POST.get('article_id')
+            is_up = request.POST.get('is_up')
+            is_up = json.loads(is_up)  #将Json格式转化为python
+            # print(is_up,type(is_up))  #true <class 'str'>
+            #2判断当前文章是否是当前用户自己写的 根据文章查文章对象 根据文章对象查作者，跟request.user_id比对
+            article_obj = models.Article.objects.filter(pk=article_id).first()
+            if not article_obj.blog.userinfo == request.user:
+                #3校验当前用户是否已经点了
+                is_click = models.UpAndDown.objects.filter(user=request.user,article=article_obj)
+                if not is_click:
+                    #4操作数据库，记录数据  要同步操作普通字段
+                    #判断当前用户点了赞还是踩 从而决定给那个字段+1
+                    if is_up:
+                        #给点赞数加一
+                        models.Article.objects.filter(pk=article_id).update(up_num =F('up_num')+1)
+                        back_dic['msg'] = '点赞成功1'
+                    else:
+                        #给点踩+1
+                        models.Article.objects.filter(pk=article_id).update(down_num=F('down_num')+1)
+                        back_dic['msg'] = '点踩成功'
+                     #操作点赞表
+                    models.UpAndDown.objects.create(user=request.user,article=article_obj,is_up=is_up)
+                else:
+                    back_dic['code'] = 1001
+                    back_dic['msg'] = '你已经点过了，不能再点了'
+            else:
+                back_dic['code'] = 1002
+                back_dic['msg'] = '不能自行点击'
+        else:
+            back_dic['code'] = 1003
+            back_dic['msg'] = '请先<a href="/login/">登录</a>'
+        return JsonResponse(back_dic)
+
+from django.db import transaction  #使用事务
+def comment(request):
+    #自己也可以给自己文章评论内容
+    if request.is_ajax():
+        back_dic = {'code': 1000, 'msg': ''}
+        if request.method == 'POST':
+            if request.user.is_authenticated:
+                article_id = request.POST.get('article_id')
+                content = request.POST.get('content')
+                parent_id = request.POST.get('parent_id')
+                #直接操作评论表存储数据   两张表,article,comment
+                with transaction.atomic():
+                    models.Article.objects.filter(pk=article_id).update(comment_num=F('comment_num')+1)
+                    models.Comment.objects.create(user=request.user,article_id=article_id,content=content,parent_id=parent_id)
+                back_dic['msg'] = '评论成功'
+            else:
+                back_dic['code'] = 1001
+                back_dic['msg']  = "用户未登陆"
+            return JsonResponse(back_dic)
+from utils.mypage import  Pagination
+@login_required
+def backend(request):
+    article_list = models.Article.objects.filter(blog=request.user.blog)
+    page_obj = Pagination(current_page=request.GET.get('page',1),all_count=article_list.count(),per_page_num=5)
+    page_queryset = article_list[page_obj.start:page_obj.end]
+    return render(request,'backend/backend.html',locals())
+
+@login_required
+def add_article(request):
+    category_list = models.Category.objects.filter(blog=request.user.blog)
+    tag_list = models.Tag.objects.filter(blog=request.user.blog)
+
+    return render(request,'backend/add_article.html',locals())

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    {% load static %}
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <h1 class="text-center">登录</h1>
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" name="username" id="username" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" name="password" id="password" class="form-control">
+        </div>
+        <div class="form-group">
+            <label for="">验证码</label>
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" name="code" id="id_code" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <img src="/get_code/" alt="" width="288" height="50" id="id_image">
+{#                    <img src="{% static 'img/default.png' %}" alt="" width="88" height="50">#}
+                </div>
+            </div>
+        </div>
+        <input type="button" class="btn btn-success" value="登录" id="id_commit">
+        <span style="color: red" id="error"></span>
+    </div>
+</div>
+<script>
+    $('#id_image').click(function(){
+        //先获取标签之前的src
+        let oldVal = $(this).attr('src')
+        $(this).attr('src',oldVal +='?')
+    })
+    //点击按钮，发送ajax请求
+    $('#id_commit').click(function () {
+        $.ajax({
+            url:'',
+            type:'post',
+            data:{
+                'username':$('#username').val(),
+                'password':$('#password').val(),
+                'code':$('#id_code').val(),
+                'csrfmiddlewaretoken':'{{ csrf_token }}',
+                {#headers: {"X-CSRFToken": $.cookie('csrftoken')},#}
+                {#"csrfmiddlewaretoken": $("[name='csrfmiddlewaretoken']").val()#}
+            },
+            {# contentType:false,  //不要使用任何编码，django后端能够自动识别formdata对象#}
+            {#processData:false,  //告诉浏览器不要对你的数据进行任何处理#}
+            success:function (args) {
+                if (args.code == 1000) {
+                    //直接跳转到首页
+                    window.location.href = args.url
+                }else{
+                    //渲染错误信息
+                    $('#error').text(args.msg)
+                }
+            }
+        })
+    })
+</script>
+
+
+</body>
+</html>

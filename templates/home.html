@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>首页</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">bbs</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#">博客 <span class="sr-only">(current)</span></a></li>
+        <li><a href="#">文章</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">更多 <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="#">Separated link</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="#">One more separated link</a></li>
+          </ul>
+        </li>
+      </ul>
+      <form class="navbar-form navbar-left">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search">
+        </div>
+        <button type="submit" class="btn btn-default">Submit</button>
+      </form>
+      <ul class="nav navbar-nav navbar-right">
+          {% if request.user.is_authenticated %}
+               <li><a href="#">{{ request.user.username }}</a></li>
+               <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">更多操作 <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-toggle="modal" data-target=".bs-example-modal-lg">修改密码</a></li>
+            <li><a href="#">修改图像</a></li>
+            <li><a href="#">后台管理</a></li>
+            <li role="separator" class="divider"></li>
+            <li><a href="{% url 'logout' %}">注销</a></li>
+          </ul>
+                       <!-- Large modal -->
+        <div class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                 <h2 class="text-center">修改密码</h2>
+              <div class="row">
+                  <div class="col-md-8 col-md-offset-2">
+                      <div class="form-group">
+                          <label for="">用户名</label>
+                          <input type="text" disabled value="{{ request.user.username }}" class="form-control">
+                      </div>
+                      <div class="form-group">
+                          <label for="">原密码</label>
+                          <input type="password" id="id_old_password" name="old_password"  class="form-control">
+                      </div>
+                      <div class="form-group">
+                          <label for="">新密码</label>
+                          <input type="password" id="id_new_password" name="new_password"  class="form-control">
+                      </div>
+                      <div class="form-group">
+                          <label for="">确认密码</label>
+                          <input type="password" id="id_confirm_password"  class="form-control">
+                      </div>
+                      <div class="modal-footer">
+                       <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                      <button class="btn btn-primary" id="id_edit">修改</button>
+                          <span style="color: red" id="password_error"></span>
+                      </div>
+                      <br>
+                      <br>
+                      </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        </li>
+              {% else %}
+                  <li><a href="{% url 'reg' %}">注册</a></li>
+                  <li><a href="{% url 'login' %}">登录</a></li>
+          {% endif %}
+      </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+
+<div class="container-fluid">
+    <div class="col-md-2">
+
+ <div class="panel panel-primary">
+          <div class="panel-heading">
+            <h3 class="panel-title">人类</h3>
+          </div>
+          <div class="panel-body">
+            宇宙之轩
+          </div>
+        </div>
+        <div class="panel panel-danger">
+          <div class="panel-heading">
+            <h3 class="panel-title">golang</h3>
+          </div>
+          <div class="panel-body">
+            高并发
+          </div>
+        </div>
+         <div class="panel panel-info">
+          <div class="panel-heading">
+            <h3 class="panel-title">python</h3>
+          </div>
+          <div class="panel-body">
+            应用范围广
+          </div>
+        </div>
+
+    </div>
+    <div class="col-md-8">
+        <ul class="media-list">
+        {% for acticle_obj in page_queryset %}
+             <li class="media">
+                 <h4 class="media-heading"><a href="/{{ acticle_obj.blog.userinfo.username }}/article/{{ acticle_obj.pk }}/"> {{ acticle_obj.title }}</a></h4>
+            <div class="media-left">
+              <a href="#">
+                <img class="media-object" src="/media/{{ acticle_obj.blog.userinfo.avatar }}" alt="..." width="66" height="40">
+              </a>
+            </div>
+            <div class="media-body">
+                <p>{{ acticle_obj.desc }}</p>
+
+            </div>
+                 <br>
+             <div>
+                 <span><a href="/{{ acticle_obj.blog.userinfo.username }}">{{ acticle_obj.blog.userinfo.username }}&nbsp;</a></span>
+                 <span>发布于&nbsp;</span>
+                 <span>{{ acticle_obj.create_time|date:"Y-m-d" }}&nbsp;</span>
+                 <span><span class="glyphicon glyphicon-comment"></span>评论:{{ article_obj.comment_num }}&nbsp;</span>
+                 <span><span class="glyphicon glyphicon-thumbs-up"></span>点赞:{{ acticle_obj.up_num }}&nbsp;</span>
+             </div>
+             <hr>
+{#                <nav aria-label="Page navigation">#}
+{#                </nav>#}
+          </li>
+            {% endfor %}
+                </ul>
+    {{ page_obj.page_html|safe }}
+{#  {% if page_obj %}#}
+{#    {% if page_obj.has_previous %}#}
+{#    <a href="?page={{page_obj.previous_page_number}}">上一页</a>#}
+{#    {% endif %}#}
+{#    Page{{ page_obj.number }}of{{ paginator.num_pages }}.#}
+{#    {% if page_obj.has_next %}#}
+{#    <a href="?page={{ page_obj.next_page_number }}">下一页</a>#}
+{#    {% endif %}#}
+{#    {% endif %}#}
+{#    {{ page_obj.page_html|safe }}#}
+{#                    {% for article_obj in page_queryset %}#}
+{#    <p>{{ article_obj.title }}</p>#}
+{#    <nav aria-label="Page navigation">#}
+{#    </nav>#}
+{#{% endfor %}#}
+{# 利用自定义分页器直接显示样式#}
+{#{{ page_obj.page_html|safe }}#}
+
+
+    </div>
+    <div class="col-md-2">
+          <div class="panel panel-primary">
+          <div class="panel-heading">
+            <h3 class="panel-title">人类</h3>
+          </div>
+          <div class="panel-body">
+            宇宙之轩
+          </div>
+        </div>
+          <div class="panel panel-danger">
+          <div class="panel-heading">
+            <h3 class="panel-title">golang</h3>
+          </div>
+          <div class="panel-body">
+            高并发
+          </div>
+        </div>
+          <div class="panel panel-info">
+          <div class="panel-heading">
+            <h3 class="panel-title">python</h3>
+          </div>
+          <div class="panel-body">
+            应用范围广
+          </div>
+        </div>
+
+
+
+    </div>
+
+</div>
+<script>
+    $('#id_edit').click(function(){
+        $.ajax({
+            url:'/set_password/',
+            type:'post',
+            data:{
+                'old_password':$('#id_old_password').val(),
+                'new_password':$('#id_new_password').val(),
+                'confirm_password':$('#id_confirm_password').val(),
+                'csrfmiddlewaretoken':'{{ csrf_token }}'
+            },
+            success:function (args) {
+                if (args.code == 1000){
+                    window.location.reload()
+                }else{
+                    $('#password_error').text(args.msg)
+                }
+            }
+
+        })
+    })
+</script>
+</body>
+</html>

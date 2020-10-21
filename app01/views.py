@@ -6,7 +6,9 @@ from django.contrib import auth
 from django.contrib.auth .decorators import login_required  # 登录装饰器
 from django.db.models import Count,F #导入聚合函数  F查询
 from django.db.models.functions import TruncMonth  #按月分类
-
+from bs4 import BeautifulSoup  #处理html页面，xss攻击
+import os
+from test12_bbs import settings
 
 
 def bootstrapcs(request):
@@ -312,7 +314,80 @@ def backend(request):
 
 @login_required
 def add_article(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        category_id = request.POST.get('category')
+        tag_id_list = request.POST.getlist('tag')
+        soup = BeautifulSoup(content,'html.parser')
+        #获取所有数据
+        for tag in  soup.find_all():  #获取标签字符串所有的标签对象
+            # print(tag.name)
+            if tag.name =="script":
+                #针对script标签，直接删除标签
+                tag.decompose()
+        #文章简介,先直接切取150个字符
+        # desc = content[0:150]
+        #2截取文本150个
+        desc = soup.text[0:150] + "..."
+        if content=="" or title =="":
+            return redirect('/add/article/')
+        else:
+            Article_obj=models.Article.objects.create(
+                title=title,
+                content=str(soup),
+                desc=desc,
+                category_id=category_id,
+                blog=request.user.blog
+            )
+            #文章和标签关系表,半自动因此需手动操作
+            article_obj_list = []
+            for i in tag_id_list:
+                article_obj_list.append(models.Article_Tag(article=Article_obj,tag_id=i))  #生成对象并添加到列表
+
+            #批量插入数据
+            models.Article_Tag.objects.bulk_create(article_obj_list)
+            #跳转到后台管理页面
+            return redirect('/backend/')
+
     category_list = models.Category.objects.filter(blog=request.user.blog)
     tag_list = models.Tag.objects.filter(blog=request.user.blog)
 
     return render(request,'backend/add_article.html',locals())
+
+
+def upload_image(request):
+    #用户写文章上传的图片也算静态资源 也应该放在media文件夹下
+    back_dic = {'error': 0, }  # 先提前定义返回给编辑器的数据格式
+    if request.method == "POST":
+        #获取用户上传的图片对象
+        # print(request.FILES)
+        file_obj = request.FILES.get('imgFile')
+        #手动拼接存储文件的路径
+        file_dir = os.path.join(settings.BASE_DIR,'media','article_img')
+        #优化操作 先判断当前文件夹是否存在 不存在则自动创建
+        if not os.path.isdir(file_dir):
+            os.mkdir(file_dir)  #创建一层目录结构  article_img
+        #拼接图片的完整路径
+        file_path = os.path.join(file_dir,file_obj.name)
+        with open(file_path,'wb') as f:
+            for line in file_obj:
+                f.write(line)
+        back_dic['url'] = '/media/article_img/%s'%file_obj.name
+    return JsonResponse(back_dic)
+
+@login_required
+def set_avatar(request):
+    if request.method =="POST":
+        file_obj = request.FILES.get('avatar')
+        # models.UserInfo.objects.filter(pk=request.user.pk).update(avatar=file_obj)  #不会再自动加avatar前缀
+        user_obj = request.user
+        user_obj.avatar = file_obj
+        user_obj.save()
+        #1自己手动加前缀
+        #2换一种更新方式
+        return redirect('/')
+    blog =request.user.blog
+    username = request.user.username
+    return render(request,'set_avatar.html',locals())
+

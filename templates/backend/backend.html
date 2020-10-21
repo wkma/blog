@@ -17,10 +17,11 @@
     {% for article in page_queryset %}
     <tr>
         <td><a href="/{{ request.user.username }}/article/{{ article.pk }}/">{{ article.title }}</a></td>
-        <td>{{ article.comment.num }}</td>
+        <td>{{ article.comment_num }}</td>
         <td>{{ article.up_num }}</td>
         <td><a href="" >编辑</a></td>
         <td><a href="" >删除</a></td>
+{#        <a href={% url "article_delete' article_obj.pk %}" class="btn-danger btn-sm">删除</a>#}
     </tr>
     {% endfor %}
     </tbody>

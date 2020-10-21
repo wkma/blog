@@ -16,9 +16,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,re_path
 from app01 import views
-
-from django.views.static import serve
 from test12_bbs import settings
+from django.views.static import serve
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -32,9 +31,9 @@ urlpatterns = [
     #修改密码
     re_path(r'^set_password/',views.set_password,name="set_pas"),
     #退出登录
-    re_path(r'^logout/',views.logout,name='logout'),
+    re_path(r'^/logout/',views.logout,name='logout'),
     #暴露后端指定文件夹资源
-    re_path(r'^media/(?P<path>.*)',serve,{'document_root':settings.MEDIA_ROOT}),
+    re_path(r'^media/(?P<path>.*)', serve, {'document_root': settings.MEDIA_ROOT}),
     #点赞点踩
     re_path(r'^up_or_down/',views.up_or_down),
     #文章评论
@@ -43,6 +42,10 @@ urlpatterns = [
     re_path(r'^backend/',views.backend),
     #添加文章
     re_path(r'^add/article/',views.add_article),
+    # re_path(r'^article_delete/',views.article_delete,name="article_delete"),
+    #编辑器上传图片接口
+    re_path(r'^upload_image/',views.upload_image),
+    re_path(r'^set/avatar/',views.set_avatar),  #修改头像
 
     #个人站点页面
     re_path(r'^(?P<username>\w+)/$',views.site,name='site'),

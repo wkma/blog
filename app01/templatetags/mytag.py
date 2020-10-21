@@ -24,3 +24,5 @@ def left_menu(username):
     # 3按照年月统计所有的文章
     date_list = models.Article.objects.filter(blog=blog).annotate(month=TruncMonth('create_time')) \
         .values('month').annotate(count_num=Count('pk')).values_list('month', 'count_num')
+
+    return locals()

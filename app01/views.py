@@ -45,7 +45,7 @@ def register(request):
 
 def login(request):
     if request.method == "POST":
-        print(request.POST)
+        # print(request.POST)
         back_dic ={'code':1000,'msg':''}
         username= request.POST.get('username')
         password = request.POST.get('password')
@@ -136,13 +136,6 @@ def home(request,*wargs):
     article_queryset = models.Article.objects.all()
     page_obj = Pagination(current_page=request.GET.get('page', 1), all_count=article_queryset.count())
     page_queryset = article_queryset[page_obj.start:page_obj.end]
-    # current_page = request.GET.get('page', 1)
-    # all_count = article_queryset.count()
-    # # 1.传值生成对象
-    # page_obj = Pagination(current_page=current_page, all_count=all_count)
-    # # 2.直接对总数据进行切片操作
-    # page_queryset = article_queryset[page_obj.start:page_obj.end]
-    # #3.将page_queryset传递到页面，替换之前的book_queryset
     return render(request,'home.html',locals())
 
 
@@ -390,4 +383,60 @@ def set_avatar(request):
     blog =request.user.blog
     username = request.user.username
     return render(request,'set_avatar.html',locals())
+
+@login_required
+def article_delete(request,delete_id):
+    models.Article.objects.filter(pk=delete_id).delete()
+    return redirect('/backend/')
+
+@login_required
+def update_article(request,edit_id):
+    edit_obj = models.Article.objects.filter(pk=edit_id).first()
+    # category_list = models.Category.objects.filter(blog=request.user.blog)
+    # tag_list = models.Tag.objects.filter(blog=request.user.blog)
+    article = models.Article.objects.filter(id=edit_id).first()
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        category_id = request.POST.get('category')
+        tag_id_list = request.POST.getlist('tag')
+        soup = BeautifulSoup(content,'html.parser')
+        #获取所有数据
+        for tag in  soup.find_all():  #获取标签字符串所有的标签对象
+            # print(tag.name)
+            if tag.name =="script":
+                #针对script标签，直接删除标签
+                tag.decompose()
+        #文章简介,先直接切取150个字符
+        # desc = content[0:150]
+        #2截取文本150个
+        desc = soup.text[0:150] + "..."
+        if content=="" or title =="":
+            return redirect('/add/article/')
+        else:
+            Article_obj=models.Article.objects.filter(pk=edit_id).update(
+                title=title,
+                content=str(soup),
+                desc=desc,
+                category_id=category_id,
+                blog=request.user.blog
+            )
+            # 文章和标签关系表,半自动因此需手动操作
+            article_obj_list = []
+            for i in tag_id_list:
+                article_obj_list.append(models.Article_Tag(article=Article_obj,tag_id=i))  #生成对象并添加到列表
+
+            #批量插入数据
+            models.Article_Tag.objects.bulk_create(article_obj_list)
+            #跳转到后台管理页面
+            return redirect('/backend/')
+
+    # category_list = models.Category.objects.filter(blog=request.user.blog)
+    # tag_list = models.Tag.objects.filter(blog=request.user.blog)
+
+    return render(request,'backend/update_article.html',locals())
+
+
+
+
 

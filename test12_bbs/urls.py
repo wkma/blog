@@ -20,8 +20,9 @@ from test12_bbs import settings
 from django.views.static import serve
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('boot',views.bootstrapcs),
+
+   path('admin/', admin.site.urls),
+    path('bootstrap',views.bootstrapcs),
     re_path(r'^register/',views.register,name='reg'),
     re_path(r'^login/',views.login,name='login'),
     #图片验证码相关操作
@@ -42,7 +43,7 @@ urlpatterns = [
     re_path(r'^backend/',views.backend),
     #添加文章
     re_path(r'^add/article/',views.add_article),
-    # re_path(r'^article_delete/',views.article_delete,name="article_delete"),
+    re_path(r'^update/article/(?P<edit_id>\d+)/',views.update_article,name="article_update"),  #修改文章
     #编辑器上传图片接口
     re_path(r'^upload_image/',views.upload_image),
     re_path(r'^set/avatar/',views.set_avatar),  #修改头像
@@ -59,8 +60,10 @@ urlpatterns = [
     #文章详情页
     re_path(r'^(?P<username>\w+)/article/(?P<article_id>\d+)/',views.article_detail),
 
-
-
+    #删除文章
+    re_path(r'^article_delete/(\d+)/',views.article_delete,name='article_delete'),
+    # #编辑文章
+    # re_path(r'article_edit/(\d+)/',views.article_edit,name='article_edit'),
 
 
 ]

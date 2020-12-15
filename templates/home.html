@@ -26,7 +26,6 @@
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
         <li class="active"><a href="#">博客 <span class="sr-only">(current)</span></a></li>
-        <li><a href="#">文章</a></li>
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">更多 <span class="caret"></span></a>
           <ul class="dropdown-menu">
@@ -153,7 +152,7 @@
                  <span><a href="/{{ acticle_obj.blog.userinfo.username }}">{{ acticle_obj.blog.userinfo.username }}&nbsp;</a></span>
                  <span>发布于&nbsp;</span>
                  <span>{{ acticle_obj.create_time|date:"Y-m-d" }}&nbsp;</span>
-                 <span><span class="glyphicon glyphicon-comment"></span>评论:{{ article_obj.comment_num }}&nbsp;</span>
+                 <span><span class="glyphicon glyphicon-comment"></span>评论:{{ article_obj.comment_num }}&nbsp;&nbsp;</span>
                  <span><span class="glyphicon glyphicon-thumbs-up"></span>点赞:{{ acticle_obj.up_num }}&nbsp;</span>
              </div>
              <hr>

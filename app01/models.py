@@ -59,7 +59,7 @@ class Tag(models.Model):
 
 
 class Article(models.Model):
-    title = models.CharField(verbose_name="文章标题",max_length=64)
+    title = models.CharField(verbose_name="文章标题",max_length=255)
     desc = models.CharField(verbose_name="文章简介",max_length=255)
     #文章内容有很多，一般使用TextField
     content = models.TextField(verbose_name="文章内容")
